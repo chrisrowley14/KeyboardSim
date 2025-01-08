@@ -1,6 +1,7 @@
 using System;
 using System.IO.Ports;
 using System.Net.Http.Headers;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Button;
 
@@ -41,18 +42,32 @@ namespace KeyboardSim
 
         private void SendKeystrokes(string text, NumericUpDown numericUpDown, NumericUpDown numericUpDownDelay)
         {
-            int delayInSec = (int)numericUpDown.Value;
-            for (int i = 0; i < delayInSec; i++)
+            try
             {
-                UpdateDelayIndicator(delayInSec - (i + 1));
-                Thread.Sleep(1000);
+                int delayInSec = (int)numericUpDown.Value;
+                for (int i = 0; i < delayInSec; i++)
+                {
+                    UpdateDelayIndicator(delayInSec - (i + 1));
+                    Thread.Sleep(1000);
+                }
+                UpdateDelayIndicator(delayInSec);
+                foreach (char c in text)
+                {
+                    SendKeys.SendWait(EscapeSpecialCharacters(c));
+                    Thread.Sleep((int)numericUpDownDelay.Value);
+                }
             }
-            UpdateDelayIndicator(delayInSec);
-            foreach (char c in text)
+            catch (Exception ex)
             {
-                SendKeys.SendWait(c.ToString());
-                Thread.Sleep((int)numericUpDownDelay.Value);
+                MessageBox.Show(ex.ToString());
             }
+
+        }
+
+        private string EscapeSpecialCharacters(char c) //Fix to allow it to handle ()[] chars as they are special. https://stackoverflow.com/questions/18299216/send-special-character-with-sendkeys
+        {
+            string txt = Regex.Replace(c.ToString(), "[+^%~()]", "{$0}");
+            return txt;
         }
 
         private void UpdateDelayIndicator(int value)
